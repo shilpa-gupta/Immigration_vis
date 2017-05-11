@@ -209,6 +209,39 @@ ul#menu li a:hover
   background: #3B3939 url(footer.png) repeat-x;
   color: #A8AA94;}
 
+
+
+
+.tooltip {
+  background: #eee;
+  box-shadow: 0 0 5px #999999;
+  color: #333;
+  display: none;
+  font-size: 12px;
+  left: 100px;
+  padding: 10px;
+  position: absolute;
+  text-align: center;
+  top: 600px;
+  width: 80px;
+  z-index: 10;
+}
+
+
+.tooltip2 {
+  background: #eee;
+  box-shadow: 0 0 5px #999999;
+  color: #333;
+  display: none;
+  font-size: 12px;
+  left: 900px;
+  padding: 10px;
+  position: absolute;
+  text-align: center;
+  top: 600px;
+  width: 80px;
+  z-index: 10;
+}
 #footer p
 { line-height: 1.7em;
   padding: 0 0 10px 0;}
