@@ -224,7 +224,7 @@
             .clamp(true);
 
         //What should the first extent of the brush become - a bit arbitrary this
-        var brushExtent = Math.max( 1, Math.min( 20, Math.round(data.length*0.2) ) );
+        var brushExtent = Math.max( 1, Math.min( 10, Math.round(data.length*0.2) ) );
 
         brush = d3.svg.brush()
             .y(mini_yScale)
@@ -497,7 +497,7 @@
             .clamp(true);
 
         //What should the first extent of the brush become - a bit arbitrary this
-        var brushExtent = Math.max( 1, Math.min( 20, Math.round(incoming_data.length*0.2) ) );
+        var brushExtent = Math.max( 1, Math.min( 10, Math.round(incoming_data.length*0.2) ) );
 
         incoming_brush = d3.svg.brush()
             .y(incoming_mini_yScale)
