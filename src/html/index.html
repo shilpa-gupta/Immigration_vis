@@ -31,25 +31,31 @@
       </center>
     </div>
 
-    <div id="site_content">
-      <center>
+    <div id="site_content" style="font-size: larger; text-align: center; margin-left: 20px; margin-right: 20px">
         <h3>World population continues to increase. With current world population now over 7 billion people,there is significant pressure for excess population to migrate from more densely populated countries to those less populated. 
         </h3>
-      </center>
-      <center>
         <h3>
         Almost 216 million people, or 3.15% of the world population, live outside their countries. </h3>
-      </center>
     </div>
     <div id="content">
-      <h2><center>Who is migrating from where to where?</center></h2>
+      <h2 style="text-align: center; font-style: oblique; font-weight: 600">Who is migrating from where to where?</h2>
         <div id="plots">
         <table>
             <tr>
-                <th>
+                <th style="text-align: center; font-weight: 600;">
+                    <div>
+                      <p style="font-size: 20px">
+                        Top 10 Countries in the World People Emigrate from
+                      </p>
+                    </div>
                     <div id="pie1"></div>
                 </th>
-                <th>
+                <th  style="text-align: center; font-weight: 600;">
+                  <div>
+                    <p style="font-size: 20px">
+                      Top 10 Countries in the World People Immigrating to
+                    </p>
+                  </div>
                     <div id="pie2"></div>
                 </th>
             </tr>
@@ -63,7 +69,7 @@
             (function(d3) {
                 'use strict';
                 var width = 800;
-                var height = 600;
+                var height = 500;
                 var radius = Math.min(400,400) / 2;
 
                 var legendRectSize = 18;
@@ -165,12 +171,12 @@
           (function(d3) {
               'use strict';
               var width = 800;
-              var height = 600;
+              var height = 500;
               var radius = Math.min(400, 400) / 2;
               var donutWidth = 75;
               var legendRectSize = 18;
               var legendSpacing = 4;
-              var color = d3.scaleOrdinal(d3.schemeCategory20b);
+              var color = d3.scaleOrdinal(d3.schemeCategory20c);
               var svg = d3.select('#pie2')
                   .append('svg')
                   .attr('width', width)
