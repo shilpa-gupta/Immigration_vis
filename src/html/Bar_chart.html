@@ -1,0 +1,670 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Immigration Visualization</title>
+    <link rel="stylesheet" type="text/css" href="../css/style.css" />
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'>
+    <script src="../js/d3/d3.min.js"></script>
+    <script src="../js/jquery/jquery-2.1.1.min.js"></script>
+    <style>
+
+        .y.axis line {
+            fill: none;
+        }
+
+        .x.axis line {
+            fill: none;
+            stroke: #e0e0e0;
+            shape-rendering: crispEdges;
+        }
+
+        .axis path {
+            display: none;
+        }
+
+        .brush .extent {
+            fill-opacity: .125;
+            shape-rendering: crispEdges;
+        }
+
+        .incoming_brush .extent {
+            fill-opacity: .125;
+            shape-rendering: crispEdges;
+        }
+
+        #wrapper1 { width: auto}
+        #wrapper2 { width: auto}
+
+        #chart1 { display: block; float: left; position: relative;}
+        #chart2 { display: block; float: left; position: relative;}
+    </style>
+</head>
+<body>
+<div id="main">
+    <div id="header">
+        <div id="logo">
+            <div id="logo_text">
+                <h1><a href="index.html">Immigration<span class="logo_colour">Visualization</span></a></h1>
+                <h2>visualize how people move across the world</h2>
+            </div>
+        </div>
+        <div id="menubar">
+            <ul id="menu">
+                <li><a href="index.html">Home</a></li>
+                <li class="selected"><a href="Bar_chart.html">Line Chart</a></li>
+                <li><a href="radial_plot.html">Radial Plot</a></li>
+                <li><a href="map_vis.html">Map</a></li>
+            </ul>
+        </div>
+    </div>
+    <table style="width: 100%; align-content: center">
+        <tbody style="background-color: white; background: white; align-content: center">
+        <tr style="background-color: white">
+            <td style="text-align: center; font-size: larger;">
+                <div> Bar Chart of Population Incoming for Different Countries</div>
+                <div id="wrapper2">
+                    <div id="chart2"></div>
+                </div>
+            </td>
+            <td style="text-align: center; font-size: larger">
+                <div>Bar Chart of Populaiton outgoing for Different Countries</div>
+                <div id="wrapper1">
+                    <div id="chart1"></div>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    var data = [],
+        svg,
+        defs,
+        gBrush,
+        brush,
+        main_xScale,
+        mini_xScale,
+        main_yScale,
+        mini_yScale,
+        main_yZoom,
+        main_xAxis,
+        main_yAxis,
+        mini_width,
+        textScale;
+
+    var incoming_data = [],
+        incoming_svg,
+        incoming_defs,
+        incoming_gBrush,
+        incoming_brush,
+        incoming_main_xScale,
+        incoming_mini_xScale,
+        incoming_main_yScale,
+        incoming_mini_yScale,
+        incoming_main_yZoom,
+        incoming_main_xAxis,
+        incoming_main_yAxis,
+        incoming_mini_width,
+        incoming_textScale;
+
+    d3.csv("../../data/outgoing_count.csv", function(data_new) {
+        d3.csv("../../data/incoming_count.csv", function(data_new) {
+            incoming_data = data_new;
+            incoming_init();
+        });
+        data = data_new;
+        init();
+    });
+
+
+
+    function init() {
+        data.sort(function(a,b) { return b.value - a.value; });
+        //Added only for the mouse wheel
+        var zoomer = d3.behavior.zoom()
+            .on("zoom", null);
+
+        var main_margin = {top: 10, right: 10, bottom: 30, left: 100},
+            main_width = 500 - main_margin.left - main_margin.right,
+            main_height = 400 - main_margin.top - main_margin.bottom;
+
+        var mini_margin = {top: 10, right: 10, bottom: 30, left: 10},
+            mini_height = 400 - mini_margin.top - mini_margin.bottom;
+        mini_width = 100 - mini_margin.left - mini_margin.right;
+
+        svg = d3.select("#chart1").append("svg")
+            .attr("class", "svgWrapper")
+            .attr("width", main_width + main_margin.left + main_margin.right + mini_width + mini_margin.left + mini_margin.right)
+            .attr("height", main_height + main_margin.top + main_margin.bottom)
+            .call(zoomer)
+            .on("wheel.zoom", scroll)
+            .on("mousedown.zoom", null)
+            .on("touchstart.zoom", null)
+            .on("touchmove.zoom", null)
+            .on("touchend.zoom", null);
+
+        var mainGroup = svg.append("g")
+            .attr("class","mainGroupWrapper")
+            .attr("transform","translate(" + main_margin.left + "," + main_margin.top + ")")
+            .append("g") //another one for the clip path - due to not wanting to clip the labels
+            .attr("clip-path", "url(#clip)")
+            .style("clip-path", "url(#clip)")
+            .attr("class","mainGroup");
+
+        var miniGroup = svg.append("g")
+            .attr("class","miniGroup")
+            .attr("transform","translate(" + (main_margin.left + main_width + main_margin.right + mini_margin.left) + "," + mini_margin.top + ")");
+
+        var brushGroup = svg.append("g")
+            .attr("class","brushGroup")
+            .attr("transform","translate(" + (main_margin.left + main_width + main_margin.right + mini_margin.left) + "," + mini_margin.top + ")");
+
+        main_xScale = d3.scale.linear().range([0, main_width]);
+        mini_xScale = d3.scale.linear().range([0, mini_width]);
+
+        main_yScale = d3.scale.ordinal().rangeBands([0, main_height], 0.4, 0);
+        mini_yScale = d3.scale.ordinal().rangeBands([0, mini_height], 0.4, 0);
+
+        main_yZoom = d3.scale.linear()
+            .range([0, main_height])
+            .domain([0, main_height]);
+
+        //Create x axis object
+        main_xAxis = d3.svg.axis()
+            .scale(main_xScale)
+            .orient("bottom")
+            .ticks(4)
+            //.tickSize(0)
+            .outerTickSize(0);
+
+        //Add group for the x axis
+        d3.select(".mainGroupWrapper")
+            .append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + 0 + "," + (main_height + 5) + ")");
+
+        //Create y axis object
+        main_yAxis = d3.svg.axis()
+            .scale(main_yScale)
+            .orient("left")
+            .tickSize(0)
+            .outerTickSize(0);
+
+        //Add group for the y axis
+        mainGroup.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(-5,0)");
+
+        //Update the scales
+        main_xScale.domain([0, d3.max(data, function(d) { return d.value; })]);
+        mini_xScale.domain([0, d3.max(data, function(d) { return d.value; })]);
+        main_yScale.domain(data.map(function(d) { return d.country; }));
+        mini_yScale.domain(data.map(function(d) { return d.country; }));
+
+        //Create the visual part of the y axis
+        d3.select(".mainGroup").select(".y.axis").call(main_yAxis);
+
+        textScale = d3.scale.linear()
+            .domain([15,50])
+            .range([12,6])
+            .clamp(true);
+
+        //What should the first extent of the brush become - a bit arbitrary this
+        var brushExtent = Math.max( 1, Math.min( 20, Math.round(data.length*0.2) ) );
+
+        brush = d3.svg.brush()
+            .y(mini_yScale)
+            .extent([mini_yScale(data[0].country), mini_yScale(data[brushExtent].country)])
+            .on("brush", brushmove)
+        //Set up the visual part of the brush
+        gBrush = d3.select(".brushGroup").append("g")
+            .attr("class", "brush")
+            .call(brush);
+
+        gBrush.selectAll(".resize")
+            .append("line")
+            .attr("x2", mini_width);
+
+        gBrush.selectAll(".resize")
+            .append("path")
+            .attr("d", d3.svg.symbol().type("triangle-up").size(20))
+            .attr("transform", function(d,i) {
+                return i ? "translate(" + (mini_width/2) + "," + 4 + ") rotate(180)" : "translate(" + (mini_width/2) + "," + -4 + ") rotate(0)";
+            });
+
+        gBrush.selectAll("rect")
+            .attr("width", mini_width);
+
+        //On a click recenter the brush window
+        gBrush.select(".background")
+            .on("mousedown.brush", brushcenter)
+            .on("touchstart.brush", brushcenter);
+
+        defs = svg.append("defs")
+
+        //Create two separate gradients for the main and mini bar - just because it looks fun
+        createGradient("gradient-rainbow-main", "60%");
+        createGradient("gradient-rainbow-mini", "13%");
+
+        //Add the clip path for the main bar chart
+        defs.append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("x", -main_margin.left)
+            .attr("width", main_width + main_margin.left)
+            .attr("height", main_height);
+
+        //The mini brushable bar
+        //DATA JOIN
+        var mini_bar = d3.select(".miniGroup").selectAll(".bar")
+            .data(data, function(d) { return d.key; });
+
+        //UDPATE
+        mini_bar
+            .attr("width", function(d) { return mini_xScale(d.value); })
+            .attr("y", function(d,i) { return mini_yScale(d.country); })
+            .attr("height", mini_yScale.rangeBand());
+
+        //ENTER
+        mini_bar.enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", 0)
+            .attr("width", function(d) { return mini_xScale(d.value); })
+            .attr("y", function(d,i) { return mini_yScale(d.country); })
+            .attr("height", mini_yScale.rangeBand())
+            .style("fill", "url(#gradient-rainbow-mini)");
+
+        //EXIT
+        mini_bar.exit()
+            .remove();
+
+        //Start the brush
+        gBrush.call(brush.event);
+
+    }
+    function update() {
+        var bar = d3.select(".mainGroup").selectAll(".bar")
+            .data(data, function(d) { return d.key; });
+
+        //UPDATE
+        bar
+            .attr("y", function(d,i) { return main_yScale(d.country); })
+            .attr("height", main_yScale.rangeBand())
+            .attr("x", 0)
+            .transition().duration(50)
+            .attr("width", function(d) { return main_xScale(d.value); });
+
+        //ENTER
+        bar.enter().append("rect")
+            .attr("class", "bar")
+            .style("fill", "url(#gradient-rainbow-main)")
+            .attr("y", function(d,i) { return main_yScale(d.country); })
+            .attr("height", main_yScale.rangeBand())
+            .attr("x", 0)
+            .transition().duration(50)
+            .attr("width", function(d) { return main_xScale(d.value); });
+
+        //EXIT
+        bar.exit()
+            .remove();
+
+    }
+    function brushmove() {
+
+        var extent = brush.extent();
+
+        //Which bars are still "selected"
+        var selected = mini_yScale.domain()
+            .filter(function(d) { return (extent[0] - mini_yScale.rangeBand() + 1e-2 <= mini_yScale(d)) && (mini_yScale(d) <= extent[1] - 1e-2); });
+        d3.select(".miniGroup").selectAll(".bar")
+            .style("fill", function(d, i) { return selected.indexOf(d.country) > -1 ? "url(#gradient-rainbow-mini)" : "#e0e0e0"; });
+
+        d3.selectAll(".y.axis text")
+            .style("font-size", textScale(selected.length));
+        var originalRange = main_yZoom.range();
+        main_yZoom.domain( extent );
+
+        main_yScale.domain(data.map(function(d) { return d.country; }));
+        main_yScale.rangeBands( [ main_yZoom(originalRange[0]), main_yZoom(originalRange[1]) ], 0.4, 0);
+
+        d3.select(".mainGroup")
+            .select(".y.axis")
+            .call(main_yAxis);
+        var newMaxXScale = d3.max(data, function(d) { return selected.indexOf(d.country) > -1 ? d.value : 0; });
+        main_xScale.domain([0, newMaxXScale]);
+        d3.select(".mainGroupWrapper")
+            .select(".x.axis")
+            .transition().duration(50)
+            .call(main_xAxis);
+        update();
+
+    }
+    function brushcenter() {
+        var target = d3.event.target,
+            extent = brush.extent(),
+            size = extent[1] - extent[0],
+            range = mini_yScale.range(),
+            y0 = d3.min(range) + size / 2,
+            y1 = d3.max(range) + mini_yScale.rangeBand() - size / 2,
+            center = Math.max( y0, Math.min( y1, d3.mouse(target)[1] ) );
+
+        d3.event.stopPropagation();
+
+        gBrush
+            .call(brush.extent([center - size / 2, center + size / 2]))
+            .call(brush.event);
+
+    }
+    function scroll() {
+        var extent = brush.extent(),
+            size = extent[1] - extent[0],
+            range = mini_yScale.range(),
+            y0 = d3.min(range),
+            y1 = d3.max(range) + mini_yScale.rangeBand(),
+            dy = d3.event.deltaY,
+            topSection;
+
+        if ( extent[0] - dy < y0 ) { topSection = y0; }
+        else if ( extent[1] - dy > y1 ) { topSection = y1 - size; }
+        else { topSection = extent[0] - dy; }
+
+        //Make sure the page doesn't scroll as well
+        d3.event.stopPropagation();
+        d3.event.preventDefault();
+
+        gBrush
+            .call(brush.extent([ topSection, topSection + size ]))
+            .call(brush.event);
+
+    }
+    function createGradient(idName, endPerc) {
+        var coloursRainbow = ["#ffffff", "#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", "#ff3333", "#ff1a1a", "#ff0000", "#e60000", "#cc0000", "#b30000", "#990000", "#800000"];
+        defs.append("linearGradient")
+            .attr("id", idName)
+            .attr("gradientUnits", "userSpaceOnUse")
+            .attr("x1", "0%").attr("y1", "0%")
+            .attr("x2", endPerc).attr("y2", "0%")
+            .selectAll("stop")
+            .data(coloursRainbow)
+            .enter().append("stop")
+            .attr("offset", function(d,i) { return i/(coloursRainbow.length-1); })
+            .attr("stop-color", function(d) { return d; });
+    }
+
+    function incoming_init() {
+        incoming_data.sort(function(a,b) { return b.value - a.value; });
+        //Added only for the mouse wheel
+        var zoomer = d3.behavior.zoom()
+            .on("zoom", null);
+
+        var main_margin = {top: 10, right: 10, bottom: 30, left: 100},
+            main_width = 500 - main_margin.left - main_margin.right,
+            main_height = 400 - main_margin.top - main_margin.bottom;
+
+        var mini_margin = {top: 10, right: 10, bottom: 30, left: 10},
+            mini_height = 400 - mini_margin.top - mini_margin.bottom;
+        incoming_mini_width = 100 - mini_margin.left - mini_margin.right;
+
+        incoming_svg = d3.select("#chart2").append("svg")
+            .attr("class", "incoming_svgWrapper")
+            .attr("width", main_width + main_margin.left + main_margin.right + incoming_mini_width + mini_margin.left + mini_margin.right)
+            .attr("height", main_height + main_margin.top + main_margin.bottom)
+            .call(zoomer)
+            .on("wheel.zoom", incoming_scroll)
+            .on("mousedown.zoom", null)
+            .on("touchstart.zoom", null)
+            .on("touchmove.zoom", null)
+            .on("touchend.zoom", null);
+
+        var incoming_mainGroup = incoming_svg.append("g")
+            .attr("class","incoming_mainGroupWrapper")
+            .attr("transform","translate(" + main_margin.left + "," + main_margin.top + ")")
+            .append("g") //another one for the clip path - due to not wanting to clip the labels
+            .attr("clip-path", "url(#clip)")
+            .style("clip-path", "url(#clip)")
+            .attr("class","incoming_mainGroup");
+
+        var incoming_miniGroup = incoming_svg.append("g")
+            .attr("class","incoming_miniGroup")
+            .attr("transform","translate(" + (main_margin.left + main_width + main_margin.right + mini_margin.left) + "," + mini_margin.top + ")");
+
+        var incoming_brushGroup = incoming_svg.append("g")
+            .attr("class","incoming_brushGroup")
+            .attr("transform","translate(" + (main_margin.left + main_width + main_margin.right + mini_margin.left) + "," + mini_margin.top + ")");
+
+        incoming_main_xScale = d3.scale.linear().range([0, main_width]);
+        incoming_mini_xScale = d3.scale.linear().range([0, incoming_mini_width]);
+
+        incoming_main_yScale = d3.scale.ordinal().rangeBands([0, main_height], 0.4, 0);
+        incoming_mini_yScale = d3.scale.ordinal().rangeBands([0, mini_height], 0.4, 0);
+
+        incoming_main_yZoom = d3.scale.linear()
+            .range([0, main_height])
+            .domain([0, main_height]);
+
+        //Create x axis object
+        incoming_main_xAxis = d3.svg.axis()
+            .scale(incoming_main_xScale)
+            .orient("bottom")
+            .ticks(4)
+            //.tickSize(0)
+            .outerTickSize(0);
+
+        //Add group for the x axis
+        d3.select(".incoming_mainGroupWrapper")
+            .append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + 0 + "," + (main_height + 5) + ")");
+
+        //Create y axis object
+        incoming_main_yAxis = d3.svg.axis()
+            .scale(incoming_main_yScale)
+            .orient("left")
+            .tickSize(0)
+            .outerTickSize(0);
+
+        //Add group for the y axis
+        incoming_mainGroup.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(-5,0)");
+
+        //Update the scales
+        incoming_main_xScale.domain([0, d3.max(incoming_data, function(d) { return d.value; })]);
+        incoming_mini_xScale.domain([0, d3.max(incoming_data, function(d) { return d.value; })]);
+        incoming_main_yScale.domain(incoming_data.map(function(d) { return d.country; }));
+        incoming_mini_yScale.domain(incoming_data.map(function(d) { return d.country; }));
+
+        //Create the visual part of the y axis
+        d3.select(".incoming_mainGroup").select(".y.axis").call(incoming_main_yAxis);
+
+        incoming_textScale = d3.scale.linear()
+            .domain([15,50])
+            .range([12,6])
+            .clamp(true);
+
+        //What should the first extent of the brush become - a bit arbitrary this
+        var brushExtent = Math.max( 1, Math.min( 20, Math.round(incoming_data.length*0.2) ) );
+
+        incoming_brush = d3.svg.brush()
+            .y(incoming_mini_yScale)
+            .extent([incoming_mini_yScale(incoming_data[0].country), incoming_mini_yScale(incoming_data[brushExtent].country)])
+            .on("brush", incoming_brushmove)
+        //Set up the visual part of the brush
+        incoming_gBrush = d3.select(".incoming_brushGroup").append("g")
+            .attr("class", "incoming_brush")
+            .call(incoming_brush);
+
+        incoming_gBrush.selectAll(".resize")
+            .append("line")
+            .attr("x2", incoming_mini_width);
+
+        incoming_gBrush.selectAll(".resize")
+            .append("path")
+            .attr("d", d3.svg.symbol().type("triangle-up").size(20))
+            .attr("transform", function(d,i) {
+                return i ? "translate(" + (incoming_mini_width/2) + "," + 4 + ") rotate(180)" : "translate(" + (incoming_mini_width/2) + "," + -4 + ") rotate(0)";
+            });
+
+        incoming_gBrush.selectAll("rect")
+            .attr("width", incoming_mini_width);
+
+        //On a click recenter the brush window
+        incoming_gBrush.select(".background")
+            .on("mousedown.brush", incoming_brushcenter)
+            .on("touchstart.brush", incoming_brushcenter);
+
+        incoming_defs = incoming_svg.append("defs")
+
+        //Create two separate gradients for the main and mini bar - just because it looks fun
+        incoming_createGradient("incoming_gradient-rainbow-main", "60%");
+        incoming_createGradient("incoming_gradient-rainbow-mini", "13%");
+
+        //Add the clip path for the main bar chart
+        incoming_defs.append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("x", -main_margin.left)
+            .attr("width", main_width + main_margin.left)
+            .attr("height", main_height);
+
+        //The mini brushable bar
+        //DATA JOIN
+        var mini_bar = d3.select(".incoming_miniGroup").selectAll(".bar")
+            .data(incoming_data, function(d) { return d.key; });
+
+        //UDPATE
+        mini_bar
+            .attr("width", function(d) { return incoming_mini_xScale(d.value); })
+            .attr("y", function(d,i) { return incoming_mini_yScale(d.country); })
+            .attr("height", incoming_mini_yScale.rangeBand());
+
+        //ENTER
+        mini_bar.enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", 0)
+            .attr("width", function(d) { return incoming_mini_xScale(d.value); })
+            .attr("y", function(d,i) { return incoming_mini_yScale(d.country); })
+            .attr("height", incoming_mini_yScale.rangeBand())
+            .style("fill", "url(#incoming_gradient-rainbow-mini)");
+
+        //EXIT
+        mini_bar.exit()
+            .remove();
+
+        //Start the brush
+        incoming_gBrush.call(incoming_brush.event);
+
+    }
+    function incoming_update() {
+        var bar = d3.select(".incoming_mainGroup").selectAll(".bar")
+            .data(incoming_data, function(d) { return d.key; });
+
+        //UPDATE
+        bar
+            .attr("y", function(d,i) { return incoming_main_yScale(d.country); })
+            .attr("height", incoming_main_yScale.rangeBand())
+            .attr("x", 0)
+            .transition().duration(50)
+            .attr("width", function(d) { return incoming_main_xScale(d.value); });
+
+        //ENTER
+        bar.enter().append("rect")
+            .attr("class", "bar")
+            .style("fill", "url(#incoming_gradient-rainbow-main)")
+            .attr("y", function(d,i) { return incoming_main_yScale(d.country); })
+            .attr("height", incoming_main_yScale.rangeBand())
+            .attr("x", 0)
+            .transition().duration(50)
+            .attr("width", function(d) { return incoming_main_xScale(d.value); });
+
+        //EXIT
+        bar.exit()
+            .remove();
+
+    }
+    function incoming_brushmove() {
+
+        var extent = incoming_brush.extent();
+
+        //Which bars are still "selected"
+        var selected = incoming_mini_yScale.domain()
+            .filter(function(d) { return (extent[0] - incoming_mini_yScale.rangeBand() + 1e-2 <= incoming_mini_yScale(d)) && (incoming_mini_yScale(d) <= extent[1] - 1e-2); });
+        d3.select(".incoming_miniGroup").selectAll(".bar")
+            .style("fill", function(d, i) { return selected.indexOf(d.country) > -1 ? "url(#incoming_gradient-rainbow-mini)" : "#e0e0e0"; });
+
+        d3.selectAll(".y.axis text")
+            .style("font-size", incoming_textScale(selected.length));
+        var originalRange = incoming_main_yZoom.range();
+        incoming_main_yZoom.domain( extent );
+
+        incoming_main_yScale.domain(incoming_data.map(function(d) { return d.country; }));
+        incoming_main_yScale.rangeBands( [ incoming_main_yZoom(originalRange[0]), incoming_main_yZoom(originalRange[1]) ], 0.4, 0);
+
+        d3.select(".incoming_mainGroup")
+            .select(".y.axis")
+            .call(incoming_main_yAxis);
+        var newMaxXScale = d3.max(incoming_data, function(d) { return selected.indexOf(d.country) > -1 ? d.value : 0; });
+        incoming_main_xScale.domain([0, newMaxXScale]);
+        d3.select(".incoming_mainGroupWrapper")
+            .select(".x.axis")
+            .transition().duration(50)
+            .call(incoming_main_xAxis);
+        incoming_update();
+
+    }
+    function incoming_brushcenter() {
+        var target = d3.event.target,
+            extent = incoming_brush.extent(),
+            size = extent[1] - extent[0],
+            range = incoming_mini_yScale.range(),
+            y0 = d3.min(range) + size / 2,
+            y1 = d3.max(range) + incoming_mini_yScale.rangeBand() - size / 2,
+            center = Math.max( y0, Math.min( y1, d3.mouse(target)[1] ) );
+
+        d3.event.stopPropagation();
+
+        incoming_gBrush
+            .call(incoming_brush.extent([center - size / 2, center + size / 2]))
+            .call(incoming_brush.event);
+
+    }
+    function incoming_scroll() {
+        var extent = incoming_brush.extent(),
+            size = extent[1] - extent[0],
+            range = incoming_mini_yScale.range(),
+            y0 = d3.min(range),
+            y1 = d3.max(range) + incoming_mini_yScale.rangeBand(),
+            dy = d3.event.deltaY,
+            topSection;
+
+        if ( extent[0] - dy < y0 ) { topSection = y0; }
+        else if ( extent[1] - dy > y1 ) { topSection = y1 - size; }
+        else { topSection = extent[0] - dy; }
+
+        //Make sure the page doesn't scroll as well
+        d3.event.stopPropagation();
+        d3.event.preventDefault();
+
+        incoming_gBrush
+            .call(incoming_brush.extent([ topSection, topSection + size ]))
+            .call(incoming_brush.event);
+
+    }
+    function incoming_createGradient(idName, endPerc) {
+        var coloursRainbow = ["#ffffff", "#e6f0ff", "#cce0ff", "#b3d1ff", "#99c2ff", "#80b3ff", "#66a3ff", "#4d94ff", "#3385ff", "#1a75ff", "#0066ff", "#005ce6", "#0052cc", "#0047b3", "#003d99", "#003380"];
+        incoming_defs.append("linearGradient")
+            .attr("id", idName)
+            .attr("gradientUnits", "userSpaceOnUse")
+            .attr("x1", "0%").attr("y1", "0%")
+            .attr("x2", endPerc).attr("y2", "0%")
+            .selectAll("stop")
+            .data(coloursRainbow)
+            .enter().append("stop")
+            .attr("offset", function(d,i) { return i/(coloursRainbow.length-1); })
+            .attr("stop-color", function(d) { return d; });
+    }
+</script>
+</body>
+</html>
