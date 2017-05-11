@@ -60,9 +60,25 @@
     </div>
     <table style="width: 100%; align-content: center">
         <tbody style="background-color: white; background: white; align-content: center">
+        <tr>
+            <p style="    font-size: initial;
+        word-wrap: break-word;
+        letter-spacing: inherit;
+        margin-left: 100px;
+        margin-right: 10px;
+        margin-top: 20px;
+        font-style: italic">
+        In This Section we are representing All the countries in Sorted order of the population which either Emigrating from or Immigrating to them.<br>
+        the Left bar chart is the sorted order of countries which are popular destinations for people across the word.<br>
+        Similarly the right bar chart is the sorted order of the countries from where people migrate to other countries.<br>
+        The X axis represents population Emigrating/Migrating Y axis represents different countries.<br>
+        since there are total 216 countries for which we can show this information, we have used brushing here to focus
+        in a certain area at a time.
+        <p>
+        <tr>
         <tr style="background-color: white">
             <td style="text-align: center; font-size: larger;">
-                <div> Bar Chart of Population Incoming for Different Countries</div>
+                <div> Bar Chart of Population Incoming from Different Countries</div>
                 <div id="wrapper2">
                     <div id="chart2"></div>
                 </div>
@@ -380,7 +396,7 @@
 
     }
     function createGradient(idName, endPerc) {
-        var coloursRainbow = ["#ffffff", "#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", "#ff3333", "#ff1a1a", "#ff0000", "#e60000", "#cc0000", "#b30000", "#990000", "#800000"];
+        var coloursRainbow = ["#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", "#ff3333", "#ff1a1a", "#ff0000", "#e60000", "#cc0000", "#b30000", "#990000", "#800000"];
         defs.append("linearGradient")
             .attr("id", idName)
             .attr("gradientUnits", "userSpaceOnUse")
@@ -653,7 +669,7 @@
 
     }
     function incoming_createGradient(idName, endPerc) {
-        var coloursRainbow = ["#ffffff", "#e6f0ff", "#cce0ff", "#b3d1ff", "#99c2ff", "#80b3ff", "#66a3ff", "#4d94ff", "#3385ff", "#1a75ff", "#0066ff", "#005ce6", "#0052cc", "#0047b3", "#003d99", "#003380"];
+        var coloursRainbow = ["#e6f0ff", "#cce0ff", "#b3d1ff", "#99c2ff", "#80b3ff", "#66a3ff", "#4d94ff", "#3385ff", "#1a75ff", "#0066ff", "#005ce6", "#0052cc", "#0047b3", "#003d99", "#003380"];
         incoming_defs.append("linearGradient")
             .attr("id", idName)
             .attr("gradientUnits", "userSpaceOnUse")

@@ -612,11 +612,11 @@ return n?ua.touches(y,n)[0]:ua.mouse(y)}function f(){ua.event.keyCode==32&&(E||(
     config.now = config.now || Object.keys(data.matrix)[0];
 
     // geometry
-    config.width = config.width || 1100;
-    config.height = 1100;
+    config.width = config.width || 900;
+    config.height = 900;
     config.margin = config.margin || 25;
     config.outerRadius = config.outerRadius || (Math.min(config.width, config.height) / 2 - config.margin);
-    config.arcWidth = config.arcWidth || 24;
+    config.arcWidth = config.arcWidth || 16;
     config.innerRadius = config.innerRadius || (config.outerRadius - config.arcWidth);
     config.arcPadding = config.arcPadding || 0.005;
     config.sourcePadding = config.sourcePadding || 3;
