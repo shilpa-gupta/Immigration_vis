@@ -312,6 +312,198 @@
       </script>
         </div>
 
+
+        <div>
+            <p align="center" style="font-size: 20px; font-weight: 600">
+                <br>
+                <br>
+                 Total population vs Illegal immigrants in United Sates
+                <br>
+                <br>
+            </p>
+        </div>
+        <div id ="plots2"></div>
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script >
+
+            // Setup svg using Bostock's margin convention
+
+            var margin = {top: 20, right: 160, bottom: 35, left: 90};
+
+            var width = 960 - margin.left - margin.right,
+                height = 450 - margin.top - margin.bottom;
+
+            var svg = d3.select("#plots2")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom+50)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            /* Data in strings like it would be if imported from a csv */
+
+            var data = [
+                { year: "1969",  Total_population: "540000", Illegal_immigrant: "202676946" },
+                { year: "1974"  ,Total_population: "1116000", Illegal_immigrant: "213853928" },
+                { year: "1980"  ,Total_population: "3000000", Illegal_immigrant: "227224681" },
+                { year: "1983" , Total_population: "2093000", Illegal_immigrant: "223791994" },
+                { year: "1992" , Total_population: "3400000", Illegal_immigrant: "255029699" },
+                { year: "1996" , Total_population: "5000000", Illegal_immigrant: "265228572" },
+                { year: "2000" , Total_population: "8460000", Illegal_immigrant: "282193477" },
+                { year: "2001" , Total_population: "7800000", Illegal_immigrant: "285107923" },
+                { year: "2002" , Total_population: "9400000", Illegal_immigrant: "287726647" },
+                { year: "2003" , Total_population: "9700000", Illegal_immigrant: "290210914" },
+                { year: "2004" , Total_population: "9300000", Illegal_immigrant: "292892127" },
+                { year: "2005",  Total_population: "10500000", Illegal_immigrant: "296410404" },
+                { year: "2006"  ,Total_population: "11550000", Illegal_immigrant: "298362973" },
+                { year: "2007"  ,Total_population: "11780000", Illegal_immigrant: "301579895" },
+                { year: "2008" , Total_population: "11600000", Illegal_immigrant: "304059724" },
+                { year: "2009" , Total_population: "10750000", Illegal_immigrant: "307006550" },
+                { year: "2010" , Total_population: "11600000", Illegal_immigrant: "308747508" },
+                { year: "2011" , Total_population: "11500000", Illegal_immigrant: "311914816" },
+                { year: "2012" , Total_population: "11400000", Illegal_immigrant: "313914040" },
+                { year: "2013" , Total_population: "11300000", Illegal_immigrant: "316128839" },
+                { year: "2014" , Total_population: "11300000", Illegal_immigrant: "318857056" },
+
+            ];
+
+            var parse = d3.time.format("%Y").parse;
+
+
+            // Transpose the data into layers
+            var dataset = d3.layout.stack()(["Total_population", "Illegal_immigrant"].map(function(fruit) {
+                return data.map(function(d) {
+                    return {x: parse(d.year), y: +d[fruit]};
+                });
+            }));
+
+
+            // Set x, y and colors
+            var x = d3.scale.ordinal()
+                .domain(dataset[0].map(function(d) { return d.x; }))
+                .rangeRoundBands([10, width-10], 0.02);
+
+            var y = d3.scale.linear()
+                .domain([0, d3.max(dataset, function(d) {  return d3.max(d, function(d) { return d.y0 + d.y; });  })])
+                .range([height, 0]);
+
+            var colors = ["#d25c4d","ff9900"];
+
+
+            // Define and draw axes
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .ticks(5)
+                .tickSize(-width, 0, 0)
+                .tickFormat( function(d) { return d } );
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickFormat(d3.time.format("%Y"));
+
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .text("Year")
+            .call(yAxis);
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+            svg.append("text")
+                .attr("transform",
+                    "translate(" + (width/2) + " ," +
+                    (height + margin.top + 20) + ")")
+                .style("text-anchor", "middle")
+                .text("Year");
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x",0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Total population vs Illegal immigrants");
+
+
+
+
+            // Create groups for each series, rects for each segment
+            var groups = svg.selectAll("g.cost")
+                .data(dataset)
+                .enter().append("g")
+                .attr("class", "cost")
+                .style("fill", function(d, i) { return colors[i]; });
+
+            var rect = groups.selectAll("rect")
+                .data(function(d) { return d; })
+                .enter()
+                .append("rect")
+                .attr("x", function(d) { return x(d.x); })
+                .attr("y", function(d) { return y(d.y0 + d.y); })
+                .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+                .attr("width", x.rangeBand()-2)
+                .on("mouseover", function() { tooltip.style("display", null); })
+                .on("mouseout", function() { tooltip.style("display", "none"); })
+                .on("mousemove", function(d) {
+                    var xPosition = d3.mouse(this)[0] - 15;
+                    var yPosition = d3.mouse(this)[1] - 25;
+                    tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+                    tooltip.select("text").text(d.y);
+                });
+
+
+            // Draw legend
+            var legend = svg.selectAll(".legend")
+                .data(colors)
+                .enter().append("g")
+                .attr("class", "legend_group")
+                .attr("transform", function(d, i) { return "translate(30," + i * 19 + ")"; });
+
+            legend.append("rect")
+                .attr("x", width - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", function(d, i) {return colors.slice().reverse()[i];});
+
+            legend.append("text")
+                .attr("x", width + 5)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "start")
+                .text(function(d, i) {
+                    switch (i) {
+                        case 0: return " Illegal_immigrant";
+                        case 1: return "Total_population";
+
+                    }
+                });
+            // Prep the tooltip bits, initial display is hidden
+            var tooltip = svg.append("g")
+                .attr("class", "tooltip_group")
+                .style("display", "none");
+
+            tooltip.append("rect")
+                .attr("width", 80)
+                .attr("height", 20)
+                .attr("fill", "white")
+                .style("opacity", 0.5);
+
+            tooltip.append("text")
+                .attr("x", 45)
+                .attr("dy", "1.2em")
+                .style("text-anchor", "middle")
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold");
+
+
+
+        </script>
+
+    </div>
+
   </div>
   </div>
 </body>
