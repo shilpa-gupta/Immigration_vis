@@ -49,6 +49,7 @@
                 <li class="selected"><a href="bar_chart.html">Bar Chart</a></li>
                 <li><a href="radial_plot.html">Radial Plot</a></li>
                 <li><a href="map_vis.html">Map</a></li>
+                <span style="font-size: larger; margin-left: 20px;margin-bottom: 0px; text-align: center; color: yellow">By Shilpa Gupta & Nidhi Mendiratta</span>
             </ul>
         </div>
     </div>
@@ -206,7 +207,7 @@
 
         //Add group for the y axis
         mainGroup.append("g")
-            .attr("class", "y axis")
+            .attr("class", "y axis outgoing_text")
             .attr("transform", "translate(-5,0)");
 
         //Update the scales
@@ -333,7 +334,7 @@
         d3.select(".miniGroup").selectAll(".bar")
             .style("fill", function(d, i) { return selected.indexOf(d.country) > -1 ? "url(#gradient-rainbow-mini)" : "#e0e0e0"; });
 
-        d3.selectAll(".y.axis text")
+        d3.selectAll(".y.axis.outgoing_text")
             .style("font-size", textScale(selected.length));
         var originalRange = main_yZoom.range();
         main_yZoom.domain( extent );
@@ -479,7 +480,7 @@
 
         //Add group for the y axis
         incoming_mainGroup.append("g")
-            .attr("class", "y axis")
+            .attr("class", "y axis incoming_text")
             .attr("transform", "translate(-5,0)");
 
         //Update the scales
@@ -529,7 +530,7 @@
 
         incoming_defs = incoming_svg.append("defs")
 
-        //Create two separate gradients for the main and mini bar - just because it looks fun
+
         incoming_createGradient("incoming_gradient-rainbow-main", "60%");
         incoming_createGradient("incoming_gradient-rainbow-mini", "13%");
 
@@ -567,7 +568,6 @@
 
         //Start the brush
         incoming_gBrush.call(incoming_brush.event);
-
     }
     function incoming_update() {
         var bar = d3.select(".incoming_mainGroup").selectAll(".bar")
@@ -606,7 +606,7 @@
         d3.select(".incoming_miniGroup").selectAll(".bar")
             .style("fill", function(d, i) { return selected.indexOf(d.country) > -1 ? "url(#incoming_gradient-rainbow-mini)" : "#e0e0e0"; });
 
-        d3.selectAll(".y.axis text")
+        d3.selectAll(".y.axis.incoming_text")
             .style("font-size", incoming_textScale(selected.length));
         var originalRange = incoming_main_yZoom.range();
         incoming_main_yZoom.domain( extent );

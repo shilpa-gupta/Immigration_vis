@@ -22,6 +22,7 @@
                 <li><a href="bar_chart.html">Bar Chart</a></li>
                 <li class="selected"><a href="radial_plot.html">Radial Plot</a></li>
                 <li><a href="map_vis.html">Map</a></li>
+                <span style="font-size: larger; margin-left: 20px;margin-bottom: 0px; text-align: center; color: yellow">By Shilpa Gupta & Nidhi Mendiratta</span>
             </ul>
         </div>
     </div>
@@ -51,16 +52,13 @@
     // help
     (function() {
       var help = d3.select('#help');
-      console.log("hello")
       help.on('click', function() {
         var isActive = help.classed('active');
-
         help
           .classed('active', !isActive)
           .transition()
           .style('width', isActive ? '30px' : '572px');
       });
-
       function helpOffset() {
         var offset = Math.max((document.body.clientWidth - document.getElementById('container').clientWidth) / 2, 0);
 
@@ -76,7 +74,6 @@
     (function() {
       var datafile = '../json/migrations.json';
       var aLittleBit = Math.PI / 100000;
-
       d3.json(datafile, function(data) {
         var now = 2005;
         var chart = Globalmigration.chart(data, {
@@ -89,7 +86,6 @@
             alpha: 0,
             threshold: 50000,
             labelThreshold: 5000,
-
             colors: 'dc3912 333300 109618 0099c6 dd4477 b82e2e 316395 994499 22aa99 aaaa11'.split(' ').map(function(c) { return '#' + c; })
           }
         });
